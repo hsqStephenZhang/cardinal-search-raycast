@@ -22,9 +22,9 @@
     {
       "name": "endpoint",
       "title": "API Endpoint",
-      "description": "The URL of your Cardinal background server",
+      "description": "The Cardinal server endpoint as host:port or a full URL. 0.0.0.0 is treated as localhost for Raycast requests.",
       "type": "textfield",
-      "default": "http://127.0.0.1:3388",
+      "default": "127.0.0.1:3388",
       "required": true
     }
   ],

@@ -24,11 +24,27 @@ type SortKey = "filename" | "fullPath" | "size" | "mtime" | "ctime";
 type SortDirection = "asc" | "desc";
 
 function normalizeEndpoint(endpoint: string) {
-  const trimmed = endpoint.trim().replace(/\/+$/, "");
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
+  const withScheme = endpoint.trim().replace(/\/+$/, "");
+  const normalized =
+    withScheme.startsWith("http://") || withScheme.startsWith("https://") ? withScheme : `http://${withScheme}`;
+
+  try {
+    const url = new URL(normalized);
+    if (url.hostname === "0.0.0.0") {
+      url.hostname = "127.0.0.1";
+    }
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return "http://127.0.0.1:3388";
   }
-  return `http://${trimmed}`;
+}
+
+function normalizeQuery(query: string) {
+  const trimmed = query.trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -52,7 +68,7 @@ export default function Command() {
 
   const limit = 50;
   const offset = (page - 1) * limit;
-  const query = useMemo(() => searchText, [searchText]);
+  const query = useMemo(() => normalizeQuery(searchText), [searchText]);
 
   const { data, isLoading } = useFetch<CardinalResponse>(`${endpoint}/search`, {
     method: "POST",
@@ -100,10 +116,14 @@ export default function Command() {
         <List.Dropdown tooltip="Sort By" value={`${sortKey}_${sortDir}`} onChange={handleSortChange}>
           <List.Dropdown.Item title="Name (A-Z)" value="filename_asc" />
           <List.Dropdown.Item title="Name (Z-A)" value="filename_desc" />
+          <List.Dropdown.Item title="Path (A-Z)" value="fullPath_desc" />
+          <List.Dropdown.Item title="Path (Z-A)" value="fullPath_asc" />
           <List.Dropdown.Item title="Size (Largest)" value="size_desc" />
           <List.Dropdown.Item title="Size (Smallest)" value="size_asc" />
-          <List.Dropdown.Item title="Newest" value="mtime_desc" />
-          <List.Dropdown.Item title="Oldest" value="mtime_asc" />
+          <List.Dropdown.Item title="Newest Modified" value="mtime_desc" />
+          <List.Dropdown.Item title="Oldest Modified" value="mtime_asc" />
+          <List.Dropdown.Item title="Newest Created" value="ctime_desc" />
+          <List.Dropdown.Item title="Oldest Created" value="ctime_asc" />
         </List.Dropdown>
       }
     >
